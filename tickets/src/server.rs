@@ -76,6 +76,14 @@ fn with_arc<T: Send + ?Sized>(arc: Arc<Mutex<T>>) -> impl Filter<Extract = (Arc<
 }
 
 pub fn router(repository: Arc<Mutex<dyn TicketRepository>>) -> impl Filter<Extract = impl Reply, Error = Rejection> + Clone {
+    let log = warp::log::custom(|info| {
+        eprintln!(
+            "{} {} {}",
+            info.method(),
+            info.path(),
+            info.status(),
+        );
+    });
     let list_route = warp::path!("tickets")
         .and(warp::get())
         .and(warp::header("X-User-Name"))
@@ -104,7 +112,8 @@ pub fn router(repository: Arc<Mutex<dyn TicketRepository>>) -> impl Filter<Extra
         .or(get_route)
         .or(list_route)
         .or(delete_route)
-        .or(health_route);
+        .or(health_route)
+        .with(log);
     routes
 }
 

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, convert::Infallible, sync::Arc};
+use std::{convert::Infallible, sync::Arc};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 use warp::{reply::{self, Reply}, Filter, Rejection};
@@ -40,7 +40,7 @@ async fn purchase_handler(username: String,
                           privilege_repository: Arc<Mutex<dyn PrivilegeRepository>>) -> WebResult<Box<dyn Reply>> {
 
     let mut paid_by_bonuses = 0;
-    let mut paid_by_money = 0;
+    let paid_by_money;
     if body.paid_from_balance {
         let Ok(privilege) = privilege_repository.lock().await.get_privilege(username.clone()).await else {
             let reply = warp::reply::with_status("Not found", warp::http::StatusCode::NOT_FOUND);
@@ -145,11 +145,21 @@ fn with_arc<T: Send + ?Sized>(arc: Arc<Mutex<T>>) -> impl Filter<Extract = (Arc<
 }
 
 pub fn router(repository: Arc<Mutex<dyn PrivilegeRepository>>) -> impl Filter<Extract = impl Reply, Error = Rejection> + Clone {
-    // let user_route = warp::path!("me")
-    //     .and(warp::get())
-    //     .and(warp::header("X-User-Name"))
-    //     .and(with_arc(repository.clone()))
-    //     .and_then(user_get_handler);
+    let log = warp::log::custom(|info| {
+        eprintln!(
+            "{} {} {}",
+            info.method(),
+            info.path(),
+            info.status(),
+        );
+        for header in info.request_headers() {
+            eprintln!(
+                "   {} {:?}",
+                header.0,
+                header.1
+            );
+        }
+    });
     let get_route = warp::path!("privilege")
         .and(warp::get())
         .and(warp::header("X-User-Name"))
@@ -171,10 +181,10 @@ pub fn router(repository: Arc<Mutex<dyn PrivilegeRepository>>) -> impl Filter<Ex
         .and(warp::get())
         .and_then(health_check_handler);
     let routes = get_route
-        // .or(user_route)
         .or(purchase_route)
         .or(refund_route)
-        .or(health_route);
+        .or(health_route)
+        .with(log);
     routes
 }
 

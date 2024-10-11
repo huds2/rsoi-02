@@ -22,10 +22,8 @@ macro_rules! arc{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>>{
-    // let connection_str = env::var("PSQL_CONNECTION")?;
-    // let port = env::var("SERVER_PORT")?.parse()?;
-    let connection_str = "postgresql://program:test@localhost/tickets";
-    let port = 8070;
+    let connection_str = env::var("PSQL_CONNECTION")?;
+    let port = env::var("SERVER_PORT")?.parse()?;
     let repository = arc!(Repository::new(&connection_str).await?);
     repository.lock().await.init().await?;
     run_server(repository, port).await;

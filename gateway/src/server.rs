@@ -4,7 +4,7 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 use warp::{reply::{self, Reply}, Filter, Rejection};
 use requester::{send_typed, RequestMethod, Requester};
-use structs::{Balance, CombinedPurchaseResponse, PrivilegeGet, PurchasePost, PurchaseResponse, Ticket, TicketPost, TicketPostBalance, TicketResponse, User, WebFlight, WebFlightPage};
+use structs::{Balance, CombinedPurchaseResponse, HealthCheckResponse, PrivilegeGet, PurchasePost, PurchaseResponse, Ticket, TicketPost, TicketPostBalance, TicketResponse, User, WebFlight, WebFlightPage};
 use crate::GatewayError;
 
 pub type WebResult<T> = std::result::Result<T, Rejection>;
@@ -277,8 +277,44 @@ async fn delete_ticket_handler(ticket_uid: Uuid,
     return Ok(Box::new(reply));
 }
 
-async fn health_check_handler() -> WebResult<impl Reply> {
-    return Ok(warp::reply::with_status("Up and running", warp::http::StatusCode::OK))
+async fn health_check_handler(services: Arc<Mutex<Services>>) -> WebResult<Box<dyn Reply>> {
+    let ticket_url = services.lock().await.tickets.clone().replace("/tickets", "");
+    let privilege_url = services.lock().await.bonuses.clone().replace("/privilege", "");
+    let flight_url = services.lock().await.flights.clone().replace("/flights", "");
+    let requester = &services.lock().await.requester.clone();
+    let tickets = if let Ok(ticket_response) = requester.send(
+        format!("{}/manage/health", ticket_url),
+        RequestMethod::GET,
+        HashMap::new(),
+        "".to_owned()).await { 
+        ticket_response.code == 200
+    } else {
+        false
+    };
+    let bonuses = if let Ok(privilege_response) = requester.send(
+        format!("{}/manage/health", privilege_url),
+        RequestMethod::GET,
+        HashMap::new(),
+        "".to_owned()).await { 
+        privilege_response.code == 200
+    } else {
+        false
+    };
+    let flights = if let Ok(flight_response) = requester.send(
+        format!("{}/manage/health", flight_url),
+        RequestMethod::GET,
+        HashMap::new(),
+        "".to_owned()).await { 
+        flight_response.code == 200
+    } else {
+        false
+    };
+    Ok(Box::new(reply::json(&HealthCheckResponse {
+        gateway: true,
+        flights,
+        tickets,
+        bonuses
+    })))
 }
 
 fn with_arc<T: Send + ?Sized>(arc: Arc<Mutex<T>>) -> impl Filter<Extract = (Arc<Mutex<T>>,), Error = Infallible> + Clone {
@@ -294,6 +330,14 @@ pub struct Services {
 }
 
 pub fn router(root_url: &str, services: Arc<Mutex<Services>>) -> impl Filter<Extract = impl Reply, Error = Rejection> + Clone {
+    let log = warp::log::custom(|info| {
+        eprintln!(
+            "{} {} {}",
+            info.method(),
+            info.path(),
+            info.status(),
+        );
+    });
     let list_flights_route = warp::path!("flights")
         .and(warp::get())
         .and(warp::query::<Paging>())
@@ -332,6 +376,7 @@ pub fn router(root_url: &str, services: Arc<Mutex<Services>>) -> impl Filter<Ext
         .and_then(delete_ticket_handler);
     let health_route = warp::path!("manage" / "health")
         .and(warp::get())
+        .and(with_arc(services.clone()))
         .and_then(health_check_handler);
     let routes = list_flights_route
         .or(list_tickets_route)
@@ -339,13 +384,12 @@ pub fn router(root_url: &str, services: Arc<Mutex<Services>>) -> impl Filter<Ext
         .or(get_privilege_route)
         .or(get_user_route)
         .or(post_ticket_route)
-        .or(delete_ticket_route)
-        .or(health_route);
+        .or(delete_ticket_route);
     let mut root_route = warp::any().boxed();
     for segment in root_url.split("/") {
         root_route = root_route.and(warp::path(segment.to_owned())).boxed();
     }
-    let routes = root_route.and(routes);
+    let routes = (root_route.and(routes)).or(health_route).with(log);
     routes
 }
 

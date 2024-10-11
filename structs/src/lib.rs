@@ -148,14 +148,22 @@ pub struct TicketResponse {
 #[allow(non_snake_case)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CombinedPurchaseResponse {
-  pub ticketUid: Uuid,
-  pub flightNumber: String,
-  pub fromAirport: String,
-  pub toAirport: String,
-  pub date: String,
-  pub price: i32,
-  pub paidByMoney: i32,
-  pub paidByBonuses: i32,
-  pub status: String,
-  pub privilege: Balance
+    pub ticketUid: Uuid,
+    pub flightNumber: String,
+    pub fromAirport: String,
+    pub toAirport: String,
+    pub date: String,
+    pub price: i32,
+    pub paidByMoney: i32,
+    pub paidByBonuses: i32,
+    pub status: String,
+    pub privilege: Balance
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HealthCheckResponse {
+    pub gateway: bool,
+    pub flights: bool,
+    pub tickets: bool,
+    pub bonuses: bool
 }
