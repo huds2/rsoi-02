@@ -13,8 +13,69 @@ services:
       - ./postgres/:/docker-entrypoint-initdb.d/
     ports:
       - "5432:5432"
+  flights:
+    container_name: flights
+    build:
+      context: ./
+      dockerfile: ./flights/Dockerfile
+    restart: on-failure
+    environment:
+      PSQL_CONNECTION: postgresql://program:test@postgres/flights
+      SERVER_PORT: 8050
+    depends_on:
+      postgres:
+        condition: service_started
+    ports:
+      - "8050:8050"
+  bonuses:
+    container_name: bonuses
+    build:
+      context: ./
+      dockerfile: ./bonuses/Dockerfile
+    restart: on-failure
+    environment:
+      PSQL_CONNECTION: postgresql://program:test@postgres/privileges
+      SERVER_PORT: 8060
+    depends_on:
+      postgres:
+        condition: service_started
+    ports:
+      - "8060:8060"
+  tickets:
+    container_name: tickets
+    build:
+      context: ./
+      dockerfile: ./tickets/Dockerfile
+    restart: on-failure
+    environment:
+      PSQL_CONNECTION: postgresql://program:test@postgres/tickets
+      SERVER_PORT: 8070
+    depends_on:
+      postgres:
+        condition: service_started
+    ports:
+      - "8070:8070"
+  gateway:
+    container_name: gateway
+    build:
+      context: ./
+      dockerfile: ./gateway/Dockerfile
+    restart: on-failure
+    environment:
+      SERVER_PORT: 8080
+      FLIGHTS_URL: http://flights:8050/flights
+      BONUSES_URL: http://bonuses:8060/privilege
+      TICKETS_URL: http://tickets:8070/tickets
+    depends_on:
+      bonuses:
+        condition: service_started
+      tickets:
+        condition: service_started
+      flights:
+        condition: service_started
+    ports:
+      - "8080:8080"
 
-# TODO добавить сервисы
 
 volumes:
   db-data:
