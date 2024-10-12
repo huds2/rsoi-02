@@ -8,6 +8,22 @@ on:
       - master
 jobs:
   build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run tests
+        run: 
+          (cd gateway; cargo test)
+          (cd bonuses; cargo test)
+          (cd tickets; cargo test)
+          (cd flights; cargo test)
+
+  grade:
     name: Autograding
     runs-on: ubuntu-latest
     steps:

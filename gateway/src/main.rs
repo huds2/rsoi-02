@@ -4,6 +4,8 @@ use std::env;
 
 use requester::Reqwester;
 mod server;
+#[cfg(test)]
+mod test;
 use server::*;
 
 custom_error!{pub GatewayError

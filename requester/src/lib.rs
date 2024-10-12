@@ -15,7 +15,7 @@ pub enum RequestMethod {
     DELETE
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Response {
     pub code: u16,
     pub body: String,
@@ -26,7 +26,7 @@ pub struct Response {
 // pub trait Requester<'a, T: Deserialize<'a>>: Sync + Send + DynClone {
 pub trait Requester: Sync + Send + DynClone {
 // pub trait Requester<'a, T: Deserialize<'a> + Clone>: Sync + Send + DynClone {
-    async fn send(&self, url: String, method: RequestMethod, headers: HashMap<String, String>, body: String) -> Result<Response, Box<dyn Error>>;
+    async fn send(&mut self, url: String, method: RequestMethod, headers: HashMap<String, String>, body: String) -> Result<Response, Box<dyn Error>>;
 }
 
 
@@ -37,7 +37,7 @@ pub struct Reqwester {}
 
 #[async_trait]
 impl Requester for Reqwester {
-    async fn send(&self, url: String, method: RequestMethod, headers: HashMap<String, String>, body: String) -> Result<Response, Box<dyn Error>> {
+    async fn send(&mut self, url: String, method: RequestMethod, headers: HashMap<String, String>, body: String) -> Result<Response, Box<dyn Error>> {
         let client = reqwest::Client::new();
         let mut builder = match method {
             RequestMethod::GET => client.get(url),
@@ -61,7 +61,7 @@ impl Requester for Reqwester {
     }
 }
 
-pub async fn send_typed<T: DeserializeOwned>(requester: &Box<dyn Requester>, url: String, method: RequestMethod, headers: HashMap<String, String>, body: String) -> Result<T, Box<dyn Error>> {
+pub async fn send_typed<T: DeserializeOwned>(requester: &mut Box<dyn Requester>, url: String, method: RequestMethod, headers: HashMap<String, String>, body: String) -> Result<T, Box<dyn Error>> {
     let response = requester.send(url, method, headers, body).await?;
     if response.code == 200 || response.code == 201 || response.code == 204 {
         let value: T = serde_json::from_str::<T>(&response.body)?;

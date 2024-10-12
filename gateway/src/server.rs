@@ -18,9 +18,9 @@ pub struct Paging {
 async fn list_flights_handler(paging: Paging,
                             services: Arc<Mutex<Services>>) -> WebResult<Box<dyn Reply>> {
     let flight_url = services.lock().await.flights.clone();
-    let requester = &services.lock().await.requester.clone();
+    let mut requester = &mut services.lock().await.requester.clone();
     let Ok(flights) = send_typed::<WebFlightPage>(
-        &requester,
+        &mut requester,
         format!("{}?page={}&size={}", flight_url, paging.page.unwrap_or(1), paging.size.unwrap_or(10)),
         RequestMethod::GET,
         HashMap::new(),
@@ -34,9 +34,9 @@ async fn list_flights_handler(paging: Paging,
 async fn ticket_to_responseticket(ticket: Ticket, 
                                   services: Arc<Mutex<Services>>) -> Result<TicketResponse, Box<dyn Error>> {
     let flights_url = services.lock().await.flights.clone();
-    let requester = &services.lock().await.requester.clone();
+    let mut requester = &mut services.lock().await.requester.clone();
     let Ok(flight) = send_typed::<WebFlight>(
-        requester,
+        &mut requester,
         format!("{}/{}", flights_url, ticket.flight_number),
         RequestMethod::GET,
         HashMap::new(),
@@ -58,9 +58,9 @@ async fn ticket_to_responseticket(ticket: Ticket,
 async fn list_tickets_handler(username: String,
                               services: Arc<Mutex<Services>>) -> WebResult<Box<dyn Reply>> {
     let ticket_url = services.lock().await.tickets.clone();
-    let requester = &services.lock().await.requester.clone();
+    let mut requester = &mut services.lock().await.requester.clone();
     let Ok(tickets) = send_typed::<Vec<Ticket>>(
-        &requester,
+        &mut requester,
         ticket_url,
         RequestMethod::GET,
         HashMap::from([
@@ -85,9 +85,9 @@ async fn get_ticket_handler(ticket_uid: Uuid,
                             username: String,
                             services: Arc<Mutex<Services>>) -> WebResult<Box<dyn Reply>> {
     let ticket_url = services.lock().await.tickets.clone();
-    let requester = &services.lock().await.requester.clone();
+    let mut requester = &mut services.lock().await.requester.clone();
     let Ok(ticket) = send_typed::<Ticket>(
-        &requester,
+        &mut requester,
         format!("{}/{}", ticket_url, ticket_uid),
         RequestMethod::GET,
         HashMap::from([
@@ -107,9 +107,9 @@ async fn get_ticket_handler(ticket_uid: Uuid,
 async fn get_privilege_handler(username: String,
                                services: Arc<Mutex<Services>>) -> WebResult<Box<dyn Reply>> {
     let privilege_url = services.lock().await.bonuses.clone();
-    let requester = &services.lock().await.requester.clone();
+    let mut requester = &mut services.lock().await.requester.clone();
     let Ok(privilege) = send_typed::<PrivilegeGet>(
-        &requester,
+        &mut requester,
         privilege_url,
         RequestMethod::GET,
         HashMap::from([
@@ -126,9 +126,9 @@ async fn get_user_handler(username: String,
                                services: Arc<Mutex<Services>>) -> WebResult<Box<dyn Reply>> {
     let privilege_url = services.lock().await.bonuses.clone();
     let ticket_url = services.lock().await.tickets.clone();
-    let requester = &services.lock().await.requester.clone();
+    let mut requester = &mut services.lock().await.requester.clone();
     let Ok(privilege) = send_typed::<PrivilegeGet>(
-        &requester,
+        &mut requester,
         privilege_url,
         RequestMethod::GET,
         HashMap::from([
@@ -139,7 +139,7 @@ async fn get_user_handler(username: String,
         return Ok(Box::new(reply));
     };
     let Ok(tickets) = send_typed::<Vec<Ticket>>(
-        &requester,
+        &mut requester,
         ticket_url,
         RequestMethod::GET,
         HashMap::from([
@@ -171,7 +171,7 @@ async fn post_ticket_handler(username: String,
                              services: Arc<Mutex<Services>>) -> WebResult<Box<dyn Reply>> {
     let ticket_url = services.lock().await.tickets.clone();
     let privilege_url = services.lock().await.bonuses.clone();
-    let requester = &services.lock().await.requester.clone();
+    let requester = &mut services.lock().await.requester.clone();
     let ticket_post = TicketPost {
         flight_number: body.flightNumber,
         price: body.price
@@ -229,9 +229,9 @@ async fn delete_ticket_handler(ticket_uid: Uuid,
                                services: Arc<Mutex<Services>>) -> WebResult<Box<dyn Reply>> {
     let ticket_url = services.lock().await.tickets.clone();
     let privilege_url = services.lock().await.bonuses.clone();
-    let requester = &services.lock().await.requester.clone();
+    let mut requester = &mut services.lock().await.requester.clone();
     let Ok(ticket) = send_typed::<Ticket>(
-        &requester,
+        &mut requester,
         format!("{}/{}", ticket_url, ticket_uid),
         RequestMethod::GET,
         HashMap::from([
@@ -281,7 +281,7 @@ async fn health_check_handler(services: Arc<Mutex<Services>>) -> WebResult<Box<d
     let ticket_url = services.lock().await.tickets.clone().replace("/tickets", "");
     let privilege_url = services.lock().await.bonuses.clone().replace("/privilege", "");
     let flight_url = services.lock().await.flights.clone().replace("/flights", "");
-    let requester = &services.lock().await.requester.clone();
+    let requester = &mut services.lock().await.requester.clone();
     let tickets = if let Ok(ticket_response) = requester.send(
         format!("{}/manage/health", ticket_url),
         RequestMethod::GET,

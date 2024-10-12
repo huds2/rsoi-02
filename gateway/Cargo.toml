@@ -12,3 +12,6 @@ structs = { path = "../structs" }
 requester = { path = "../requester" }
 custom_error = "1.9.2"
 serde_json = "1.0.128"
+
+[dev-dependencies]
+async-trait = "0.1.83"
