@@ -38,7 +38,7 @@ impl FlightRepository for MockRepository {
 
 
 #[tokio::test]
-async fn get_privilege() {
+async fn get_flight() {
     let repository = arc!(MockRepository::new(
             Some(vec![
                  Flight {

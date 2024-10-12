@@ -31,7 +31,7 @@ impl TicketRepository for MockRepository {
         Ok(self.tickets.0[self.tickets.1 - 1].clone())
     }
     async fn create(&mut self, ticket: TicketPost, username: String) ->  Result<Uuid, Box<dyn Error>> {
-        todo!()
+        Ok(uuid::uuid!("914619a4-ade7-43cb-b086-9e88ca35a728"))
     }
     async fn cancel(&mut self, uuid: Uuid) ->  Result<(), Box<dyn Error>> {
         todo!()
@@ -61,4 +61,32 @@ async fn list_tickets() {
         .reply(&router).await;
     assert_eq!(res.status(), 200);
     assert_eq!(res.body(), "[{\"id\":0,\"ticket_uid\":\"17ea0b3b-9efb-4be1-8db5-81512fe77c88\",\"username\":\"someone\",\"flight_number\":\"AFL31\",\"price\":50,\"status\":\"PAID\"}]");
+}
+
+#[tokio::test]
+async fn post_tickets() {
+    let repository = arc!(MockRepository::new(
+            vec![
+                Ticket {
+                    id: 0,
+                    ticket_uid: uuid::uuid!("17ea0b3b-9efb-4be1-8db5-81512fe77c88"),
+                    username: "someone".to_owned(),
+                    flight_number: "AFL31".to_owned(),
+                    price: 50,
+                    status: "PAID".to_owned()
+                }
+            ]
+            ));
+    let router = router(repository);
+    let res = warp::test::request()
+        .method("POST")
+        .path("/tickets")
+        .header("X-User-Name", "someone")
+        .body(serde_json::to_string(&TicketPost{
+            flight_number: "AFL31".to_owned(),
+            price: 50
+        }).unwrap())
+        .reply(&router).await;
+    assert_eq!(res.status(), 200);
+    assert_eq!(res.body(), "{\"id\":0,\"ticket_uid\":\"17ea0b3b-9efb-4be1-8db5-81512fe77c88\",\"username\":\"someone\",\"flight_number\":\"AFL31\",\"price\":50,\"status\":\"PAID\"}");
 }
