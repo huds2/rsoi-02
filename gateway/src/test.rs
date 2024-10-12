@@ -22,6 +22,7 @@ impl MockRequester {
 
 #[async_trait]
 impl Requester for MockRequester {
+    #[allow(unused_variables)]
     async fn send(&mut self,
                   url:String,
                   method:requester::RequestMethod,

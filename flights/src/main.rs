@@ -1,5 +1,7 @@
 mod repository;
 mod server;
+#[cfg(test)]
+mod test;
 use repository::*;
 use structs::*;
 use server::*;
