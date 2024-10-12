@@ -18,10 +18,10 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: Run tests
         run: 
-          cargo test --manifest-path=gateway/Cargo.toml
-          cargo test --manifest-path=bonuses/Cargo.toml
-          cargo test --manifest-path=flights/Cargo.toml
-          cargo test --manifest-path=tickets/Cargo.toml
+          cargo test --manifest-path=gateway/Cargo.toml;
+          cargo test --manifest-path=bonuses/Cargo.toml;
+          cargo test --manifest-path=flights/Cargo.toml;
+          cargo test --manifest-path=tickets/Cargo.toml;
 
   grade:
     name: Autograding
